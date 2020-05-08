@@ -1,7 +1,7 @@
 void stopbeep(void)
 {
-		DDRE=0X08;
-		long count=50000;
+		DDRE=0X10;
+		long count=5000;
     /* Replace with your application code */ 
        
        while(count>0)
@@ -18,10 +18,11 @@ void stopbeep(void)
 	       
 	       TIFR0 = 0x01;   // write a 1 to TOV0 to reset overflow flag
 	       TCNT0 = -16;    // reset preload
-	       PORTE ^= 0x08; // 00001000
+	       PORTE ^= 0x10; // 00001000
 		   count=count-1;
 	       
        }
        
        return 0;
        }
+
