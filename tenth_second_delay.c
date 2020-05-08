@@ -1,27 +1,29 @@
 //Using timer/counter 0, create a 0.1 s delay to be used as the tick rate in 
 //the stopwatch and timer features.
-
 void Tenth_Second_Delay()
 {
-	
+	//Timer needs to run 50 times to achieve desired delay
+	unsigned char LOOP_COUNT = 50;
 
-	
-}
+	//Initialize timer counter register to 0
+	TCNT0 = 0;
+	//Initialize output compare register to 124 (0->124 = 125 ticks)
+	OCR0 = 124;
+	//Configure timer for CTC mode and prescale of 256
+	TCCR0 = 0x0C;
 
-
-Tenth_Second_Delay()
-{
-	configure timer settings;
-
-	//for loop needed only if # of timer ticks > 256 with prescale of 1024
-	//if loop is needed, enable CTC mode to reset counter on compare match
-	for x iterations
+	//Run timer for 0.1 s
+	for(unsigned char i = 0; i < LOOP_COUNT; i++)
 	{
-		while(timer_compare_match = false)
-		{
-			//do nothing
-		}
+		//Wait until compare match flag is raised
+		while((TIFR & 0x02) != 0);
+
+		//Clear output compare flag
+		TIFR = 0xFF;
 	}
 
-	return 0;
+	//Turn off timer
+	TCCR0 = 0x00;
+
+	return;
 }
