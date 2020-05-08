@@ -1,0 +1,198 @@
+//Show menu in terminal, get input for selected mode, then call corresponding //function.
+
+Main()
+{
+	display menu in terminal;
+
+	while(quit_program = false)
+	{
+		get serial input from terminal;
+
+		if stopwatch mode selected
+		{
+			print “Stopwatch Mode Activated” in terminal
+			Stopwatch();
+		}
+
+		else if timer mode selected
+		{
+			print “Timer Mode Activated” in terminal
+			Timer();
+		}
+
+		if quit_button pressed
+		{
+			quit_program = true;		//quit program
+		}
+	}
+
+	return 0;
+}
+
+
+//When started, play start beep then keep count of the running time(tenths of //seconds). After increment, display one’s digit on LEDs. When split time //button is pressed, print current total time in terminal. When stopped, play //stop beep then print total time in terminal.
+
+Stopwatch()
+{
+	configure buttons/ports;
+
+	while(exit_stopwatch = false)
+	{
+		if start_button pressed
+		{
+			Stopwatch_Start_Beep();
+
+			total_time = 0;
+			while(stopwatch_running = true)
+			{
+				Tenth_Second_Delay();
+				total_time++;
+
+				display one’s digit on LEDs (total_time % 10);
+
+				//Split times additional feature
+				if split_button pressed
+				{
+					print total_time to terminal;
+				}
+
+				if stop_button pressed
+				{
+					Stopwatch_Stop_Beep();
+
+				stopwatch_running = false;
+				print total time to terminal;
+				}
+			}
+		}
+
+		if exit_button pressed
+		{
+			exit_stopwatch = true;		//return to menu
+		}
+	}
+
+	return 0;
+}
+
+
+//Output square wave with frequency ? to indicate start of stopwatch.
+
+Stopwatch_Start_Beep()
+{
+	use timer/counter 2 to create square wave with high frequency;
+	output wave for ? seconds (0.5, 0.25 would probably work well);
+
+	return 0;
+}
+
+
+//Output square wave with frequency ? to indicate stop of stopwatch.
+
+Stopwatch_Stop_Beep()
+{
+	use timer/counter 2 to create square wave with low frequency;
+	output wave for ? seconds (0.5, 0.25 would probably work well);
+
+	return 0;
+}
+
+
+//Get input for total_time from terminal, then begin down-count when //start_button is pressed. After each decrement, display one’s digit on LEDs. //When time runs out (total_time == 0), flash LEDs and repeatedly output //beeps.
+
+Timer()
+{
+	configure buttons/ports;
+
+	get input for total_time;
+
+	while(exit_timer = false)
+	{
+		if start_button pressed
+		{
+			Timer_Start_Beep();
+
+			while(timer_running = true)
+			{
+				Tenth_Second_Delay();
+				total_time--;
+
+				display one’s digit on LEDs (total_time % 10);
+
+				if total_time == 0
+				{
+					Timer_Stop_Alarm();
+
+					timer_running = false;
+					reset total_time so timer can be run again;
+				}
+			}
+
+		}
+
+		if exit_button pressed
+		{
+			exit_timer = true;		//return to menu
+		}
+
+	}
+
+	return 0;
+}
+
+
+//Output square wave with frequency ? to indicate start of timer.
+
+Timer_Start_Beep()
+{
+	use timer/counter 2 to create square wave with high frequency;
+	output wave for ? seconds (0.5, 0.25 would probably work well);
+
+	return 0;
+}
+
+
+//Repeatedly beep and flash LEDs to indicate the timer has run out. When //stop_button is pressed, cease the alarm and return to timer mode.
+
+Timer_Stop_Alarm()
+{
+	set LEDs to all be off;
+
+	while(stop_alarm = false)
+	{
+		use timer/counter 2 to create square wave with low frequency;
+		output wave for ? seconds (0.5, 0.25 would probably work well);
+		delay for ? seconds (same as output time);
+
+		toggle LEDs;
+
+	if stop_button pressed
+	{
+		stop_alarm = true;
+	}
+}
+
+set LEDs to be off;
+
+	return 0;
+}
+
+
+//Using timer/counter 0, create a 0.1 s delay to be used as the tick rate in //the stopwatch and timer features.
+
+Tenth_Second_Delay()
+{
+	configure timer settings;
+
+	//for loop needed only if # of timer ticks > 256 with prescale of 1024
+	//if loop is needed, enable CTC mode to reset counter on compare match
+	for x iterations
+	{
+		while(timer_compare_match = false)
+		{
+			//do nothing
+		}
+	}
+
+	return 0;
+}
