@@ -53,7 +53,7 @@ int main(void)
 			//quit_program = true;
 		}
 
-		USART_TxChar(value);
+		//USART_TxChar(value);
 		
 		
 	}
