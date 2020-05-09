@@ -1,13 +1,16 @@
 
 #define F_CPU 16000000UL					// fosc = 16 MHz
+#define preload -200
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
+
 
 void USART_Init(unsigned long);				// initialize USART function
 char USART_RxChar();						// Data receiving function
 void USART_TxChar(char);					// Data transmitting function
 void USART_SendString(char*);				// Send string of USART data function
+void delayroutine();
 
 
 //	This program uses USART1 to transmit and receive data from a serial terminal.
@@ -21,11 +24,6 @@ int main(void)
 	DDRA = 0x00;	// set port A to input
 	PORTA = 0xFF;	// use pull-up resistors on Port A for the input switches
 	
-
-	DDRD = 0xFB;	// USART1 uses pins PD2 for Receiving (input) & PD3 for Transmitting (output)
-	// PD2 cannot be used as an output for LED3
-	
-	PORTD = 0xFF;	// turn all of the LEDs off (pull-up resistors on)
 	
 	USART_Init(9600);  // initialize USART to 9600 baud
 
@@ -104,4 +102,17 @@ void USART_SendString(char *str)
 		USART_TxChar(str[i]);						/* Send each char of string till the NULL */
 		i++;
 	}
+}
+
+void delayroutine()
+{
+	//TCNT0 = preload;   
+	TCCR0A = 0b00000000;
+	TCCR0B = 0b000000101;  // timer0 clk 1024 prescaler
+	// TCCR0 = 0b00000101 for Atmega32
+	while (!(TIFR0 & (1<<TOV0))); // polling
+	TCCR0A = 0x00;
+	TCCR0B = 0x00;        // turn off timer 0 - end of delay
+	TIFR0 = 1<<TOV0;
+	
 }
