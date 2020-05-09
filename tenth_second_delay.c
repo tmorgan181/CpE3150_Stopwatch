@@ -4,13 +4,11 @@ void Tenth_Second_Delay()
 {
 	//Timer needs to run 50 times to achieve desired delay
 	unsigned char LOOP_COUNT = 50;
-
-	//Initialize timer counter register to 0
-	TCNT0 = 0;
+	
 	//Initialize output compare register to 124 (0->124 = 125 ticks)
 	OCR0A = 124;
 	//Enable output compare interrupt
-	TIMSK = (1<<OCIE0)
+	TIMSK0 = (1<<OCIE0A);
 	//Turn on timer configured for CTC mode and prescale of 256
 	TCCR0B = (1<<WGM00) | (1<<CS02);
 
@@ -18,10 +16,10 @@ void Tenth_Second_Delay()
 	for(unsigned char i = 0; i < LOOP_COUNT; i++)
 	{
 		//Wait until compare match flag is raised
-		while((TIFR0 & (1<<OCF0)) != 0);
+		while((TIFR0 & (1<<OCF0A)) != 0);
 
 		//Clear output compare flag
-		TIFR0 = (1<<OCF0);
+		TIFR0 = (1<<OCF0A);
 	}
 
 	//Turn off timer
