@@ -106,7 +106,7 @@ void USART_SendString(char *str)
 
 void delayroutine()
 {
-	//TCNT0 = preload;   
+	TCNT0 = preload;   
 	TCCR0A = 0b00000000;
 	TCCR0B = 0b000000101;  // timer0 clk 1024 prescaler
 	// TCCR0 = 0b00000101 for Atmega32
