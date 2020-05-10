@@ -29,6 +29,7 @@ void Stopwatch()
 			//Wait until button is released
 			while(~PINA & 0x01);
 			//Debounce
+			delay();
 
 			//Play start beep
 			startbeep();
@@ -47,6 +48,11 @@ void Stopwatch()
 				//Check SW2 (split time button)
 				if(~PINA & 0x02)
 				{
+					//Wait until button is released
+					while(~PINA & 0x02);
+					//Debounce
+					delay();
+
 					//Display current time in terminal
 					USART_SendString("Split Time: " + total_time + " tenths of a second");
 				}
@@ -54,6 +60,11 @@ void Stopwatch()
 				//Check SW3 (stop button)
 				if(~PINA & 0x04)
 				{
+					//Wait until button is released
+					while(~PINA & 0x04);
+					//Debounce
+					delay();
+
 					//Play stop beep
 					stopbeep();
 
@@ -68,6 +79,11 @@ void Stopwatch()
 		//Check SW4 (exit stopwatch button)
 		if(~PINA & 0x08)
 		{
+			//Wait until button is released
+			while(~PINA & 0x08);
+			//Debounce
+			delay();
+
 			//Return to menu
 			exit_stopwatch = true;
 		}
