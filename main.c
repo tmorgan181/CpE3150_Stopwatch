@@ -1,4 +1,5 @@
 
+
 #define F_CPU 16000000UL					// fosc = 16 MHz
 
 #include <avr/io.h>
@@ -6,29 +7,37 @@
 #include <stdbool.h>
 #include <string.h>
 #include <stdlib.h>
-#include <stdio.h>
 
 void USART_Init(unsigned long);				// initialize USART function
-int USART_RxChar(void);						// Data receiving function
+//char USART_RxChar(void);						// Data receiving function
+unsigned char*USART_RxStr(unsigned char*, int);
 void USART_TxChar(char);					// Data transmitting function
 void USART_SendString(char*);				// Send string of USART data function
+
 
 
 //	This program uses USART1 to transmit and receive data from a serial terminal.
 //	USART1 creates a virtual COM port if it is connected to a PC via a USB cable.
 int TimerValue;  // used if using polling for receiving data
+char* charBuffer;
+char c;
 
 
 int main(void)
 {
+	USART_Init(9600);  // initialize USART to 9600 baud
 	DDRA = 0x00;	// set port A to input
 	PORTA = 0xFF;	// use pull-up resistors on Port A for the input switches
-	USART_Init(9600);  // initialize USART to 9600 baud
+	DDRD=0XF0;
+	PORTD=0XF0;
+	DDRE=0X10;
 
 	while(1)
 	{
+
+
 		// this code is used if polling is used to check for received characters
-		TimerValue= USART_RxChar();  // continually poll to see if a character is received
+		  // continually poll to see if a character is received
 		// value will contain received byte if using serial
 
 		// check to see if a button is pressed on the board
@@ -46,9 +55,8 @@ int main(void)
 			while(~PINA & 0X02)
 			{}
 			delay();
-			USART_SendString("Timer Mode Activated.");
-			DDRD=0XFF;
-			Timer(TimerValue);
+			USART_SendString("Timer Mode Activated. Please introduce a value.");
+			Timer();
 		}
 		else if(~PINA & 0x04) // check SW3 / PA2
 		{
@@ -82,13 +90,13 @@ void USART_Init(unsigned long BAUDRATE)				// USART initialize function
 
 
 // Data receiving function
-int USART_RxChar()
+/*int USART_RxChar()
 {
 	if((UCSR1A & (1 << RXC)))	// checks to see if there is a character to receive
 	return (UDR1);			//  if so, it returns the character
 	else
 	return '\0';			//  if not, it returns a null
-}
+}*/
 
 
 // Data transmitting function
@@ -109,12 +117,15 @@ void USART_SendString(char *str)
 		i++;
 	}
 }
-void Timer(int TValue)
+void Timer()
 {
+	TimerValue = USART_RxStr(charBuffer, 8);
+	int x;
+	sscanf(TimerValue, "%d", &x);
 	startbeep();
-	for(unsigned char i = TValue; i > 0; i--)
+	for(unsigned char i = x; i > 0; i--)
 	{
-		PORTD=~(i%10);
+		PORTD=(~(i%10)<<4);
 		Tenth_Second_Delay();
 	}
 	Flash();
@@ -147,7 +158,7 @@ void Tenth_Second_Delay()
 }
 void startbeep(void)
 {
-	DDRE=0X10;
+
 	long count=10000;
 	/* Replace with your application code */
 	
@@ -174,7 +185,6 @@ void startbeep(void)
 }
 void stopbeep(void)
 {
-	DDRE=0X10;
 	long count=5000;
 	/* Replace with your application code */
 	
@@ -191,7 +201,7 @@ void stopbeep(void)
 		}
 		
 		TIFR0 = 0x01;   // write a 1 to TOV0 to reset overflow flag
-		TCNT0 = -16;    // reset preload
+		TCNT0 = -199;    // reset preload
 		PORTE ^= 0x10; // 00001000
 		count=count-1;
 		
@@ -201,13 +211,8 @@ void stopbeep(void)
 }
 void Flash(void)
 {
-	DDRE=0XFF;
-	DDRD=0XFF;
 	PORTE=0X00;
-	PORTD=0X00;
-	DDRA=0X00;
-	PORTA=0XFF;
-	
+	PORTD=0X00;	
 	while(1)
 	{
 		short count1=30;
@@ -228,18 +233,18 @@ void Flash(void)
 					delay();
 					PORTD=0XFF;
 					PORTE=0XFF;
-					return 0;
+					return;
 				}
 			}
 			
 			TIFR0 = 0x01;   // write a 1 to TOV0 to reset overflow flag
 			TCNT0 = -200;    // reset preload
-			PORTE ^= 0x10; // 00001000
+			PORTE ^= 0x10; // 00010000
 			count1=count1-1;
 			
 		}
-		DDRE^=0XFF;
-		DDRD^=0XFF;
+		DDRE^=0X10;
+		PORTD^=0XF0;
 	}
 }
 void delay()
@@ -263,12 +268,11 @@ void Stopwatch()
 	//				SW4 = exit stopwatch
 
 	//Set PORTA (switches) to input
-	DDRA = 0x00;
 	//Enable pull-up resistors
 	PORTA = 0xFF;
 
-	//Set PORTD (LEDs) to output
-	DDRD = 0xFF;
+
+
 	//Turn off LEDs
 	PORTD = 0xFF;
 
@@ -296,36 +300,27 @@ void Stopwatch()
 				total_time++;
 
 				//Display one's digit on LEDs
-				PORTD = ~(total_time % 10);
+				PORTD = (~(total_time%10)<<4);
 
 				//Check SW2 (split time button)
 				if(~PINA & 0x02)
 				{
+					char* message;
 					//Wait until button is released
 					while(~PINA & 0x02);
 					//Debounce
 					delay();
 
-					//Get length of time integer (# of characters)
-					int value = total_time;
-					int length = 1;
-					while(value > 9)
-					{
-						length++;
-						value /= 10;
-					}
-
+					//Display current time in terminal
 					//Convert total_time to a string
-					char* str;
-					str = new char[length + 1];
+					char str[10];
 					sprintf(str, "%d", total_time);
 
 					USART_SendString("Split Time: ");
 					USART_SendString(str);
 					USART_SendString(" tenths of a second.");
 
-					//Delete dynamically allocated memory
-					delete[] str;
+
 				}
 
 				//Check SW3 (stop button)
@@ -342,9 +337,12 @@ void Stopwatch()
 					//Stop timing
 					stopwatch_running = false;
 					//Display total run time in terminal
-					USART_SendString("Total Run Time: ");
-					USART_TxChar(total_time);
-					USART_SendString(" tenths of a second");
+					char str[10];
+					sprintf(str, "%d", total_time);
+
+					USART_SendString("Total Time: ");
+					USART_SendString(str);
+					USART_SendString(" tenths of a second.");
 				}
 			}
 		}
@@ -365,3 +363,23 @@ void Stopwatch()
 
 	return;
 }
+
+unsigned char* USART_RxStr(unsigned char *charBuffer, int size)
+{
+    unsigned char i = 0;
+
+    if (size == 0) return 0;            // return 0 if no space
+
+    while (i < size - 1) {              // check space is available (including additional null char at end)
+        unsigned char c;
+        while ( !(UCSR1A & (1<<RXC)) );  // wait for another char - WARNING this will wait forever if nothing is received
+        c = UDR1;
+        if (c == '\0') break;           // break on NULL character
+        charBuffer[i] = c;                       // write into the supplied buffer
+        i++;
+    }
+    charBuffer[i] = '\0';                           // ensure string is null terminated
+
+    return charBuffer;                       // return number of characters written
+} 
+
