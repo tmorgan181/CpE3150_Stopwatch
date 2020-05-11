@@ -1,7 +1,6 @@
 
 
 
-
 #define F_CPU 16000000UL					// fosc = 16 MHz
 
 #include <avr/io.h>
@@ -11,8 +10,8 @@
 #include <stdlib.h>
 
 void USART_Init(unsigned long);				// initialize USART function
-int USART_RxChar(void);						// Data receiving function
-int USART_RxStr(int*, int);
+char USART_RxChar(void);						// Data receiving function
+char* USART_RxStr(char*, int);
 void USART_TxChar(char);					// Data transmitting function
 void USART_SendString(char*);				// Send string of USART data function
 void USART_TxInt(int data);
@@ -22,7 +21,7 @@ void USART_TxInt(int data);
 //	This program uses USART1 to transmit and receive data from a serial terminal.
 //	USART1 creates a virtual COM port if it is connected to a PC via a USB cable.
 int TimerValue;  // used if using polling for receiving data
-int* charBuffer;
+char* charBuffer;
 char c;
 
 
@@ -93,12 +92,12 @@ void USART_Init(unsigned long BAUDRATE)				// USART initialize function
 
 
 // Data receiving function
-int USART_RxChar()
+char USART_RxChar()
 {
 	if((UCSR1A & (1 << RXC)))	// checks to see if there is a character to receive
 	return (UDR1);			//  if so, it returns the character
 	else
-	return 0;			//  if not, it returns a null
+	return '\0';			//  if not, it returns a null
 }
 
 
@@ -128,7 +127,7 @@ void USART_SendString(char *str)
 }
 void Timer()
 {
-	TimerValue = USART_RxStr(charBuffer,8);
+	TimerValue = atoi(USART_RxStr(charBuffer,8));
 	USART_TxInt(TimerValue);
 	/*int x;
 	sscanf(TimerValue, "%d", &x);
@@ -263,7 +262,7 @@ void delay()
 	//TCNT0 = preload;   
 	TCCR0A = 0b00000000;
 	TCCR0B = 0b000000101;  // timer0 clk 1024 prescaler
-	TCNT0 = -156;
+	TCNT0 = -180;
 	// TCCR0 = 0b00000101 for Atmega32
 	while (!(TIFR0 & (1<<TOV0))); // polling
 	TCCR0A = 0x00;
@@ -374,7 +373,7 @@ void Stopwatch()
 
 	return;
 }
-int USART_RxStr(int* charBuffer, int size)
+char* USART_RxStr(char* charBuffer, int size)
 {
     int i = 0;
 	while(!(UCSR1A & (1<<RXC)));
@@ -382,14 +381,9 @@ int USART_RxStr(int* charBuffer, int size)
 	{
 		charBuffer[i]=USART_RxChar();
 	}
-	   charBuffer[i] = 0;  
-   int j, k = 0;
-	for (j = 0; j < size; j++)
-    k = 10 * k + charBuffer[j];
+	   charBuffer[i] = '\0'; // ensure string is null terminated
 
-                         // ensure string is null terminated
-
-    return k;                       // return number of characters written
+    return charBuffer;                       // return number of characters written
 }
 /*unsigned char* USART_RxStr(unsigned char *charBuffer, int size)
 {
