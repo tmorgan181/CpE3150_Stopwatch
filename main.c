@@ -6,6 +6,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 void USART_Init(unsigned long);				// initialize USART function
 int USART_RxChar(void);						// Data receiving function
@@ -300,19 +301,31 @@ void Stopwatch()
 				//Check SW2 (split time button)
 				if(~PINA & 0x02)
 				{
-					char* message;
 					//Wait until button is released
 					while(~PINA & 0x02);
 					//Debounce
 					delay();
 
-					//Display current time in terminal
-					char* buffer [sizeof(int)*8+1];
-					message=strcat("Split Time: ",   itoa (total_time,buffer,10));
-					message=strcat(message," tenths of a second.");
-					USART_SendString(message);
-					memset(buffer, 0, sizeof(buffer));
+					//Get length of time integer (# of characters)
+					int value = total_time;
+					int length = 1;
+					while(value > 9)
+					{
+						length++;
+						value /= 10;
+					}
 
+					//Convert total_time to a string
+					char* str;
+					str = new char[length + 1];
+					sprintf(str, "%d", total_time);
+
+					USART_SendString("Split Time: ");
+					USART_SendString(str);
+					USART_SendString(" tenths of a second.");
+
+					//Delete dynamically allocated memory
+					delete[] str;
 				}
 
 				//Check SW3 (stop button)
