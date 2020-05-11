@@ -1,5 +1,7 @@
 
 
+
+
 #define F_CPU 16000000UL					// fosc = 16 MHz
 
 #include <avr/io.h>
@@ -9,17 +11,18 @@
 #include <stdlib.h>
 
 void USART_Init(unsigned long);				// initialize USART function
-//char USART_RxChar(void);						// Data receiving function
-unsigned char*USART_RxStr(unsigned char*, int);
+int USART_RxChar(void);						// Data receiving function
+int USART_RxStr(int*, int);
 void USART_TxChar(char);					// Data transmitting function
 void USART_SendString(char*);				// Send string of USART data function
+void USART_TxInt(int data);
 
 
 
 //	This program uses USART1 to transmit and receive data from a serial terminal.
 //	USART1 creates a virtual COM port if it is connected to a PC via a USB cable.
 int TimerValue;  // used if using polling for receiving data
-char* charBuffer;
+int* charBuffer;
 char c;
 
 
@@ -90,17 +93,23 @@ void USART_Init(unsigned long BAUDRATE)				// USART initialize function
 
 
 // Data receiving function
-/*int USART_RxChar()
+int USART_RxChar()
 {
 	if((UCSR1A & (1 << RXC)))	// checks to see if there is a character to receive
 	return (UDR1);			//  if so, it returns the character
 	else
-	return '\0';			//  if not, it returns a null
-}*/
+	return 0;			//  if not, it returns a null
+}
 
 
 // Data transmitting function
 void USART_TxChar(char data)
+{
+	UDR1 = data;					 //writes data to be transmitting in UDR
+	while (!(UCSR1A & (1<<UDRE)));	 //waits until data transmit and buffer get empty
+}
+
+void USART_TxInt(int data)
 {
 	UDR1 = data;					 //writes data to be transmitting in UDR
 	while (!(UCSR1A & (1<<UDRE)));	 //waits until data transmit and buffer get empty
@@ -119,11 +128,13 @@ void USART_SendString(char *str)
 }
 void Timer()
 {
-	TimerValue = USART_RxStr(charBuffer, 8);
-	int x;
+	TimerValue = USART_RxStr(charBuffer,8);
+	USART_TxInt(TimerValue);
+	/*int x;
 	sscanf(TimerValue, "%d", &x);
+	USART_SendString(charBuffer);*/
 	startbeep();
-	for(unsigned char i = x; i > 0; i--)
+	for(int i = TimerValue; i > 0; i--)
 	{
 		PORTD=(~(i%10)<<4);
 		Tenth_Second_Delay();
@@ -363,8 +374,24 @@ void Stopwatch()
 
 	return;
 }
+int USART_RxStr(int* charBuffer, int size)
+{
+    int i = 0;
+	while(!(UCSR1A & (1<<RXC)));
+	for (i=0; i<size; i++)
+	{
+		charBuffer[i]=USART_RxChar();
+	}
+	   charBuffer[i] = 0;  
+   int j, k = 0;
+	for (j = 0; j < size; j++)
+    k = 10 * k + charBuffer[j];
 
-unsigned char* USART_RxStr(unsigned char *charBuffer, int size)
+                         // ensure string is null terminated
+
+    return k;                       // return number of characters written
+}
+/*unsigned char* USART_RxStr(unsigned char *charBuffer, int size)
 {
     unsigned char i = 0;
 
@@ -372,14 +399,19 @@ unsigned char* USART_RxStr(unsigned char *charBuffer, int size)
 
     while (i < size - 1) {              // check space is available (including additional null char at end)
         unsigned char c;
-        while ( !(UCSR1A & (1<<RXC)) );  // wait for another char - WARNING this will wait forever if nothing is received
+        if ( (UCSR1A & (1<<RXC)) )// wait for another char - WARNING this will wait forever if nothing is received
+		{  
         c = UDR1;
         if (c == '\0') break;           // break on NULL character
         charBuffer[i] = c;                       // write into the supplied buffer
         i++;
+		}
+		else
+		{
+			break;
+		}
     }
     charBuffer[i] = '\0';                           // ensure string is null terminated
 
     return charBuffer;                       // return number of characters written
-} 
-
+}*/ 
