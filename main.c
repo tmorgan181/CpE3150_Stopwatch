@@ -1,6 +1,4 @@
 
-
-
 #define F_CPU 16000000UL					// fosc = 16 MHz
 
 #include <avr/io.h>
@@ -11,11 +9,11 @@
 
 void USART_Init(unsigned long);				// initialize USART function
 char USART_RxChar(void);						// Data receiving function
-char* USART_RxStr(char*, int);
+char * recv_str();
 void USART_TxChar(char);					// Data transmitting function
 void USART_SendString(char*);				// Send string of USART data function
 void USART_TxInt(int data);
-
+unsigned char * UART1_Rx_Str();
 
 
 //	This program uses USART1 to transmit and receive data from a serial terminal.
@@ -23,6 +21,7 @@ void USART_TxInt(int data);
 int TimerValue;  // used if using polling for receiving data
 char* charBuffer;
 char c;
+char* message;
 
 
 int main(void)
@@ -94,11 +93,14 @@ void USART_Init(unsigned long BAUDRATE)				// USART initialize function
 // Data receiving function
 char USART_RxChar()
 {
-	if((UCSR1A & (1 << RXC)))	// checks to see if there is a character to receive
-	return (UDR1);			//  if so, it returns the character
-	else
-	return '\0';			//  if not, it returns a null
+	while(!(UCSR1A & (1<<RXC)));	// checks to see if there is a character to receive
+	// Wait until there is data to receive.
+	return UDR1;
 }
+
+
+
+
 
 
 // Data transmitting function
@@ -119,19 +121,19 @@ void USART_TxInt(int data)
 void USART_SendString(char *str)
 {
 	int i=0;
-	while (str[i]!=0)
+	while (str[i]!='\0')
 	{
 		USART_TxChar(str[i]);						/* Send each char of string till the NULL */
 		i++;
 	}
 }
+
+
 void Timer()
 {
-	TimerValue = atoi(USART_RxStr(charBuffer,8));
-	USART_TxInt(TimerValue);
-	/*int x;
-	sscanf(TimerValue, "%d", &x);
-	USART_SendString(charBuffer);*/
+	while(!(UCSR1A & (1<<RXC)));
+	TimerValue=atoi(recv_str());
+	//USART_SendString(itoa(TimerValue,message,10));
 	startbeep();
 	for(int i = TimerValue; i > 0; i--)
 	{
@@ -373,39 +375,16 @@ void Stopwatch()
 
 	return;
 }
-char* USART_RxStr(char* charBuffer, int size)
-{
-    int i = 0;
-	while(!(UCSR1A & (1<<RXC)));
-	for (i=0; i<size; i++)
-	{
-		charBuffer[i]=USART_RxChar();
+
+
+char * recv_str() {
+	char c;
+	int i = 0;
+	while(i < 1) {
+		c = USART_RxChar();
+		charBuffer[i] = c;
+		i++;
 	}
-	   charBuffer[i] = '\0'; // ensure string is null terminated
-
-    return charBuffer;                       // return number of characters written
+	charBuffer[1] = '\0';
+	return charBuffer;
 }
-/*unsigned char* USART_RxStr(unsigned char *charBuffer, int size)
-{
-    unsigned char i = 0;
-
-    if (size == 0) return 0;            // return 0 if no space
-
-    while (i < size - 1) {              // check space is available (including additional null char at end)
-        unsigned char c;
-        if ( (UCSR1A & (1<<RXC)) )// wait for another char - WARNING this will wait forever if nothing is received
-		{  
-        c = UDR1;
-        if (c == '\0') break;           // break on NULL character
-        charBuffer[i] = c;                       // write into the supplied buffer
-        i++;
-		}
-		else
-		{
-			break;
-		}
-    }
-    charBuffer[i] = '\0';                           // ensure string is null terminated
-
-    return charBuffer;                       // return number of characters written
-}*/ 
